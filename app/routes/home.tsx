@@ -1,13 +1,20 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { Chat } from "../chat/chat";
+import { Sidebar } from "../sidebar/sidebar";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "beLLMan" },
+    { name: "description", content: "Welcome to beLLMan" },
   ];
 }
 
 export default function Home() {
-  return <Welcome />;
+  return (
+    <div className="container-fluid chat-container">
+      <div className="row h-100">
+        <Sidebar />
+        <Chat />
+      </div>
+    </div>
+  );
 }
