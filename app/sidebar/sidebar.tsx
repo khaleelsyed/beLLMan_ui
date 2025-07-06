@@ -1,19 +1,46 @@
+import React from "react";
+import { Await, useAsyncValue, useLoaderData } from "react-router";
+import * as Spinners from "react-spinners";
+
 const apiURL = "http://localhost:3000";
 
+type ChatListElement = {
+  id: number;
+  title: string;
+  updated_at: string;
+  message_ids: number[];
+};
+
+export async function loader() {
+  const chats = await fetch(apiURL + "/chats", { method: "get" }).then(
+    (response) => response.json(),
+  );
+  return chats;
+}
+
+export function Chats() {
+  const resolvedChats: ChatListElement[] = useAsyncValue();
+
+  return (
+    <div className="list-group">
+      {resolvedChats.map((chat) => (
+        <a
+          key={"chat_label_" + chat.id}
+          href={`/chat/${chat.id}`}
+          className="list-group-item list-group-item-action"
+        >
+          <div className="d-flex w-100 justify-content-between">
+            <h5 className="mb-1">{chat.title}</h5>
+            <small>{chat.updated_at}</small>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export function Sidebar() {
-  var chats = fetch(apiURL + "/chats")
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.json();
-    })
-    .then((data) => {
-      console.log(data);
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-    });
+  const chatsPromise = useLoaderData();
 
   return (
     <div className="col-md-3 col-12 border-end p-0">
@@ -25,23 +52,15 @@ export function Sidebar() {
             placeholder="Search contacts..."
           />
         </div>
-        <div className="list-group">
-          <a href="#" className="list-group-item list-group-item-action active">
-            <div className="d-flex w-100 justify-content-between">
-              <h5 className="mb-1">John Doe</h5>
-              <small>3 mins ago</small>
-            </div>
-            <p className="mb-1">Hey, how are you?</p>
-          </a>
-          <a href="#" className="list-group-item list-group-item-action">
-            <div className="d-flex w-100 justify-content-between">
-              <h5 className="mb-1">Jane Smith</h5>
-              <small>1 hour ago</small>
-            </div>
-            <p className="mb-1">Are we still on for lunch?</p>
-          </a>
-          {/* Add more contacts here */}
-        </div>
+
+        <React.Suspense fallback={<Spinners.BeatLoader />}>
+          <Await
+            resolve={chatsPromise}
+            errorElement={<div>Could not load chats 😬</div>}
+          >
+            <Chats />
+          </Await>
+        </React.Suspense>
       </div>
     </div>
   );
