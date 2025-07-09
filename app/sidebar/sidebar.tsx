@@ -1,8 +1,11 @@
-import React from "react";
-import { Await, useAsyncValue, useLoaderData } from "react-router";
-import * as Spinners from "react-spinners";
+import {
+  useQuery,
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-const apiURL = "http://localhost:3000";
+let queryClient = new QueryClient();
 
 type ChatListElement = {
   id: number;
@@ -11,15 +14,12 @@ type ChatListElement = {
   message_ids: number[];
 };
 
-export async function loader() {
-  const chats = await fetch(apiURL + "/chats", { method: "get" }).then(
-    (response) => response.json(),
-  );
-  return chats;
-}
+function Chats(resolvedChats: ChatListElement[]) {
+  if (resolvedChats == null) {
+    return <b>No chats available</b>;
+  }
 
-export function Chats() {
-  const resolvedChats: ChatListElement[] = useAsyncValue();
+  console.log("Resolved Chats: ", resolvedChats);
 
   return (
     <div className="list-group">
@@ -30,7 +30,9 @@ export function Chats() {
           className="list-group-item list-group-item-action"
         >
           <div className="d-flex w-100 justify-content-between">
-            <h5 className="mb-1">{chat.title}</h5>
+            <h5 className="mb-1">
+              {queryClient.getQueryData(["chat", chat.title])}
+            </h5>
             <small>{chat.updated_at}</small>
           </div>
         </a>
@@ -39,8 +41,30 @@ export function Chats() {
   );
 }
 
-export function Sidebar() {
-  const chatsPromise = useLoaderData();
+function getChats() {
+  const apiURL = "http://localhost:3000";
+
+  return useQuery({
+    queryKey: ["chats"],
+    queryFn: async (): Promise<Array<ChatListElement>> => {
+      const response = await fetch(apiURL + "/chats");
+      return await response.json();
+    },
+  });
+}
+
+// DEV
+export function RenderError(fetchError: any) {
+  console.log("Error fetching chats:", fetchError.message);
+  return <div className="alert alert-danger">Error: {fetchError.message}</div>;
+}
+
+export function SidebarComponent() {
+  const { status, data, error, isFetching } = getChats();
+
+  if (error != null) {
+    console.log("Error fetching chats:", error);
+  }
 
   return (
     <div className="col-md-3 col-12 border-end p-0">
@@ -53,14 +77,15 @@ export function Sidebar() {
           />
         </div>
 
-        <React.Suspense fallback={<Spinners.BeatLoader />}>
-          <Await
-            resolve={chatsPromise}
-            errorElement={<div>Could not load chats 😬</div>}
-          >
-            <Chats />
-          </Await>
-        </React.Suspense>
+        <QueryClientProvider client={queryClient}>
+          {isFetching ? (
+            "Loading..."
+          ) : error ? (
+            <RenderError fetchError={error} />
+          ) : (
+            <Chats resolvedChats={data} />
+          )}
+        </QueryClientProvider>
       </div>
     </div>
   );
