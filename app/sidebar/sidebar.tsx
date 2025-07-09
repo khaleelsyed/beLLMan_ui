@@ -4,7 +4,7 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from "@tanstack/react-query";
-
+import { getTimeAgo } from "../common/timeAgo";
 let queryClient = new QueryClient();
 
 type ChatListElement = {
@@ -14,26 +14,24 @@ type ChatListElement = {
   message_ids: number[];
 };
 
-function Chats(resolvedChats: ChatListElement[]) {
-  if (resolvedChats == null) {
+function Chats(resolvedChats: any) {
+  if (resolvedChats == null && resolvedChats.resolvedChats.length === 0) {
     return <b>No chats available</b>;
   }
 
-  console.log("Resolved Chats: ", resolvedChats);
+  let chats: ChatListElement[] = resolvedChats.resolvedChats;
 
   return (
     <div className="list-group">
-      {resolvedChats.map((chat) => (
+      {chats.map((chat) => (
         <a
           key={"chat_label_" + chat.id}
           href={`/chat/${chat.id}`}
           className="list-group-item list-group-item-action"
         >
           <div className="d-flex w-100 justify-content-between">
-            <h5 className="mb-1">
-              {queryClient.getQueryData(["chat", chat.title])}
-            </h5>
-            <small>{chat.updated_at}</small>
+            <h6 className="mb-1">{chat.title}</h6>
+            <small>{getTimeAgo(chat.updated_at)}</small>
           </div>
         </a>
       ))}
@@ -41,30 +39,21 @@ function Chats(resolvedChats: ChatListElement[]) {
   );
 }
 
-function getChats() {
+function RenderError({ fetchError }: { fetchError: any }) {
+  console.log("Error fetching chats:", fetchError.message);
+  return <div className="alert alert-danger">Error: {fetchError.message}</div>;
+}
+
+export function SidebarComponent() {
   const apiURL = "http://localhost:3000";
 
-  return useQuery({
+  const { status, data, error, isFetching } = useQuery({
     queryKey: ["chats"],
     queryFn: async (): Promise<Array<ChatListElement>> => {
       const response = await fetch(apiURL + "/chats");
       return await response.json();
     },
   });
-}
-
-// DEV
-export function RenderError(fetchError: any) {
-  console.log("Error fetching chats:", fetchError.message);
-  return <div className="alert alert-danger">Error: {fetchError.message}</div>;
-}
-
-export function SidebarComponent() {
-  const { status, data, error, isFetching } = getChats();
-
-  if (error != null) {
-    console.log("Error fetching chats:", error);
-  }
 
   return (
     <div className="col-md-3 col-12 border-end p-0">
@@ -73,19 +62,19 @@ export function SidebarComponent() {
           <input
             type="text"
             className="form-control"
-            placeholder="Search contacts..."
+            placeholder="Search chats"
           />
         </div>
 
-        <QueryClientProvider client={queryClient}>
-          {isFetching ? (
-            "Loading..."
-          ) : error ? (
-            <RenderError fetchError={error} />
-          ) : (
-            <Chats resolvedChats={data} />
-          )}
-        </QueryClientProvider>
+        {isFetching ? (
+          "Loading..."
+        ) : error ? (
+          <RenderError fetchError={error} />
+        ) : data ? (
+          <Chats resolvedChats={data} />
+        ) : (
+          <b>No chats found</b>
+        )}
       </div>
     </div>
   );
