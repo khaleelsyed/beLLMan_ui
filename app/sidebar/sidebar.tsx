@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { getTimeAgo } from "../common/timeAgo";
-let queryClient = new QueryClient();
+import { apiURL } from "../common/consts";
 
 type ChatListElement = {
   id: number;
@@ -39,14 +39,13 @@ function Chats(resolvedChats: any) {
   );
 }
 
+// TODO: Consider moving this to a separate component
 function RenderError({ fetchError }: { fetchError: any }) {
   console.log("Error fetching chats:", fetchError.message);
   return <div className="alert alert-danger">Error: {fetchError.message}</div>;
 }
 
 export function SidebarComponent() {
-  const apiURL = "http://localhost:3000";
-
   const { status, data, error, isFetching } = useQuery({
     queryKey: ["chats"],
     queryFn: async (): Promise<Array<ChatListElement>> => {
