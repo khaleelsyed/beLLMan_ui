@@ -1,15 +1,10 @@
-import {
-  useQuery,
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getTimeAgo } from "../common/timeAgo";
 import { apiURL } from "../common/consts";
 
 type Message = {
   id: number;
-  role: string;
+  role: number;
   content: string;
   sent: string;
 };
@@ -25,17 +20,28 @@ type ChatComponentProps = {
   chatID: string | undefined;
 };
 
-function Messages(resolvedMessages: any) {
-  if (
-    resolvedMessages == null &&
-    resolvedMessages.resolvedMessages.length === 0
-  ) {
+function getRoleName(role: number): string {
+  switch (role) {
+    case 0:
+      return "System";
+    case 1:
+      return "Assistant";
+    case 2:
+      return "User";
+    default:
+      return "Unknown";
+  }
+}
+
+function Messages({ resolvedChat }: { resolvedChat: ChatElement }) {
+  if (!resolvedChat) {
     return <b>No messages have been sent yet</b>;
   }
 
-  let messages: Message[] = resolvedMessages.resolvedMessages;
+  console.log("Resolved chat:", resolvedChat);
 
-  console.error(messages);
+  // Assuming you want to show messages from the first chat element
+  const messages: Message[] = resolvedChat.messages || [];
 
   return (
     <div className="chat-messages p-3">
@@ -43,16 +49,16 @@ function Messages(resolvedMessages: any) {
         <div
           key={"message_" + message.id}
           className={`message mb-3 ${
-            message.role === "user" ? "align-self-end" : "align-self-start"
+            message.role === 2 ? "align-self-end" : "align-self-start"
           }`}
         >
           <div
             className={`bg-${
-              message.role === "user" ? "primary text-white" : "light"
+              message.role === 2 ? "primary text-white" : "light"
             } rounded p-2`}
           >
-            <strong>{message.role === "user" ? "You" : "Assistant"}:</strong>{" "}
-            {message.content}
+            <strong>{getRoleName(message.role)}:</strong>
+            {" " + message.content}
           </div>
           <small className="text-muted">{getTimeAgo(message.sent)}</small>
         </div>
@@ -69,12 +75,13 @@ function RenderError({ fetchError }: { fetchError: any }) {
 
 export function ChatComponent({ chatID: chatID }: ChatComponentProps) {
   const { status, data, error, isFetching } = useQuery({
-    queryKey: ["chats"],
-    queryFn: async (): Promise<Array<ChatElement>> => {
+    queryKey: ["chat"],
+    queryFn: async (): Promise<ChatElement[]> => {
       const response = await fetch(apiURL + "/chat/" + chatID);
       return await response.json();
     },
   });
+
 
   return (
     <div className="col-md-9 col-12 p-0 d-flex flex-column">
@@ -83,7 +90,7 @@ export function ChatComponent({ chatID: chatID }: ChatComponentProps) {
       ) : error ? (
         <RenderError fetchError={error} />
       ) : data ? (
-        <Messages resolvedMessages={data} />
+        <Messages resolvedChat={data} />
       ) : (
         <b>No chats found</b>
       )}
