@@ -9,7 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@react-router/node": "^7.6.3",
+    "@react-router/node": "^7.9.4",
     "@react-router/serve": "^7.6.3",
     "@tanstack/react-query": "^5.81.5",
     "bootstrap": "^5.3.7",
